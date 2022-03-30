@@ -1,4 +1,5 @@
 const PageRouter = require('./page-router')
+const { mapToObject } = require('./test-utils')
 
 describe("[PageRouter] - Roteamento Prioritário", () => {
 
@@ -11,7 +12,7 @@ describe("[PageRouter] - Roteamento Prioritário", () => {
         const pageData = router.route(URI)
 
         expect(pageData.path).toContain(REAL_FILE)
-        expect(pageData.parameters).toMatchObject({})
+        expect(mapToObject(pageData.parameters)).toMatchObject({})
     })
 
     it("O roteador deve encontrar o arquivo 'index' na pasta", () => {
@@ -20,7 +21,7 @@ describe("[PageRouter] - Roteamento Prioritário", () => {
 
         const pageData = router.route(URI)
         expect(pageData.path).toContain(REAL_FILE)
-        expect(pageData.parameters).toMatchObject({})
+        expect(mapToObject(pageData.parameters)).toMatchObject({})
     })
 
     it("O roteador deve priorizar pastas absolutas", () => {
@@ -29,7 +30,7 @@ describe("[PageRouter] - Roteamento Prioritário", () => {
 
         const pageData = router.route(URI)
         expect(pageData.path).toContain(REAL_FILE)
-        expect(pageData.parameters).toMatchObject({})
+        expect(mapToObject(pageData.parameters)).toMatchObject({})
     })
 
     it("O Roteador deve encontrar pastas variáveis", () => {
@@ -41,7 +42,7 @@ describe("[PageRouter] - Roteamento Prioritário", () => {
 
         const pageData = router.route(URI)
         expect(pageData.path).toContain(REAL_FILE)
-        expect(pageData.parameters).toMatchObject(REAL_PARAMS)
+        expect(mapToObject(pageData.parameters)).toMatchObject(REAL_PARAMS)
     })
 
     it("O Roteador deve encontrar arquivos constantes em pastas variáveis", () => {
@@ -53,7 +54,7 @@ describe("[PageRouter] - Roteamento Prioritário", () => {
 
         const pageData = router.route(URI)
         expect(pageData.path).toContain(REAL_FILE)
-        expect(pageData.parameters).toMatchObject(REAL_PARAMS)
+        expect(mapToObject(pageData.parameters)).toMatchObject(REAL_PARAMS)
     })
 
     it("O roteador deve encontrar arquivos variáveis em pastas variáveis", () => {
@@ -68,7 +69,7 @@ describe("[PageRouter] - Roteamento Prioritário", () => {
 
         const pageData = router.route(URI)
         expect(pageData.path).toContain(REAL_FILE)
-        expect(pageData.parameters).toMatchObject(REAL_PARAMS)
+        expect(mapToObject(pageData.parameters)).toMatchObject(REAL_PARAMS)
     })
 
     it("O roteador deve priorizar arquivos constantes", () => {
@@ -82,6 +83,6 @@ describe("[PageRouter] - Roteamento Prioritário", () => {
 
         const pageData = router.route(URI)
         expect(pageData.path).toContain(REAL_FILE)
-        expect(pageData.parameters).toMatchObject(REAL_PARAMS)
+        expect(mapToObject(pageData.parameters)).toMatchObject(REAL_PARAMS)
     })
 })

@@ -3,10 +3,8 @@ const PageRouter = require('./page-router')
 const router = new PageRouter();
 
 const uris = [
-    "/times/sudeste",
-    "/times/campeonato-brasileiro",
-    "/times/sudeste/serie-a",
-    "/times/sul/sudeste/sao-paulo"
+    "/times/sudeste/chocolate",
 ]
+const result = uris.map(uri => ({uri, result: router.routeToVariablePath2(uri) }))
 
-uris.map(uri => router.route(uri))
+console.log(result);

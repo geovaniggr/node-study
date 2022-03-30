@@ -17,91 +17,90 @@ class PageRouter {
     static PAGE_DIRECTORY = path.join(__dirname, "..", "pages")
 
     route(uri) {
+        const page = new Page(uri)
+
         return Chain
-            .of(uri)
+            .of(page)
             .match(this.routeToAbsolutePath.bind(this))
             .orElse(this.routeToVariablePath.bind(this))
             .get()
     }
 
-    routeToAbsolutePath(uri) {
-        const url = new Page(uri)
-
+    routeToAbsolutePath(url) {
         const folders = url.folders.join("/")
 
         const path = buildPath(PageRouter.PAGE_DIRECTORY, "/", folders)
 
-        return this.findPage(path, url.page)
+        return this.findPage(path, url.resource)
     }
 
-    routeToVariablePath(uri) {
-        const url = new Page(uri)
+    routeToVariablePath(url) {
+        const { params, lastAnalyzedPath } = this.diveIntoFolderParameters(url.folders)
 
-        const { executedFullSearch, params, lastAnalyzedPath } = this.diveIntoFolderParameters(url.folders)
+        return Chain
+            .of(lastAnalyzedPath)
+            .match( (path) => {
+                const page = this.findPage(path, url.resource)
 
-        if(!executedFullSearch) return
+                if(!page) return
 
-        const possiblePage = this.findPage(lastAnalyzedPath, url.page)
+                page.mergeParams(params)
 
-        if(possiblePage){
-            return new PageData({
-                path: possiblePage.path,
-                parameters: {...possiblePage.parameters, ...params}
+                return page
             })
-        }
+            .orElse( (path) => {
+                const next = this.putFolderParameter(path, url.resource, params)
 
-        const folder = this.findFileInFolder(lastAnalyzedPath, (file) => this.hasVariableFolder(file, url.page))
+                if(!next) return
 
-        if(!folder) return
+                const page = this.findPage(next)
 
-        this.addParameter(params, folder, url.page)
+                if(!page) return
 
-        const page = this.findPage(folder.path)
+                page.mergeParams(params)
 
-        return new PageData({
-            path: page.path,
-            parameters: {...params, ...page.parameters}
-        })
+                return page
+            })
+            .orElse( () => ({ error: "PAGE NOT FOUND" }))
+            .get()
     }
 
     diveIntoFolderParameters(folders) {
-        console.log(`Iniciando o mergulho`)
         let path = PageRouter.PAGE_DIRECTORY
-        const URLVars = {}
+        const params = new Map()
 
-        for (const folderName of folders) {
-            const actualPath = buildPath(path, "/", folderName)
-            const existsPath = this.existsFile(actualPath)
+        for(const folder of folders) {
+            const next = this.putFolderParameter(path, folder, params)
 
-            if (existsPath) {
-                console.log(`Existe a pasta ${actualPath} então indo para ela.`)
-                path = actualPath
-                continue
+            if(!next){
+                break
             }
 
-            const folder = this.findFileInFolder(path, (file) => this.hasVariableFolder(file, folderName))
-
-            if(!folder) {
-                console.log(`Terminando a navegação pois não existe arquivo variável na pasta ${actualPath}`)
-                console.log("======================================\n\n")
-                return {
-                    params: URLVars,
-                    lastAnalyzedPath: path,
-                    executedFullSearch: false
-                }
-            }
-
-            this.addParameter(URLVars, folder, folderName)
-            console.log(`Indo de ${path} para ${folder.path}`)
-            path = folder.path
-
+            path = next
         }
 
         return {
-            params: URLVars,
-            lastAnalyzedPath: path,
-            executedFullSearch: true
+            params,
+            lastAnalyzedPath: path
         }
+    }
+
+    putFolderParameter(path, folderName, params = new Map()){
+        const actualPath = buildPath(path, "/", folderName)
+        const existsPath = this.existsFile(actualPath)
+
+        if (existsPath) {
+            return actualPath;
+        }
+
+        const folder = this.findFileInFolder(path, (file) => this.hasVariableFolder(file, folderName))
+
+        if(!folder) {
+            return;
+        }
+
+        this.addParameterAsMap(params, folder, folderName)
+        return folder.path
     }
 
     findFileInFolder(path, predicate) {
@@ -128,15 +127,15 @@ class PageRouter {
 
         const possibleFile = firstMatch(possibleAbsolutePaths, this.existsFile)
 
-        if (possibleFile) return new PageData({path: possibleFile, parameters: {}})
+        if (possibleFile) return new PageData({ path: possibleFile })
 
         const variableFile = this.findFileInFolder(path, (file) => this.hasVariableFile(file, page))
 
         if(!variableFile) return
 
-        const URLVars = {}
+        const URLVars = new Map()
 
-        this.addParameter(URLVars, variableFile, page)
+        this.addParameterAsMap(URLVars, variableFile, page)
 
         return new PageData({
             path: variableFile.path,
@@ -154,6 +153,17 @@ class PageRouter {
         const value = rawValue[0].replace("/", "")
 
         params[key] = value
+    }
+
+    addParameterAsMap(params, file, page) {
+        const rawValue = page.match(file.nameAsRegex)
+
+        if(!rawValue) return
+
+        const key = file.variableKey
+        const value = rawValue[0].replace("/", "")
+
+        params.set(key, value)
     }
 
     existsFile(path) {

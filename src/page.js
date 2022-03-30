@@ -9,12 +9,12 @@ class Page {
         const absoluteFolder = uri.substring(0, indexOfLastSlash)
         const initialFolder = uri.substring(0, indexOfFirstSlash)
 
-        const page = uri.substring(absoluteFolder.length)
+        const resource = uri.substring(absoluteFolder.length)
 
         this.uri = uri
         this.firstFolder = initialFolder
         this.pathToFolder = absoluteFolder
-        this.page = page
+        this.resource = resource
     }
 
     get folders() {
